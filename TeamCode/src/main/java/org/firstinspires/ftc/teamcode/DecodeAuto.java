@@ -3,105 +3,142 @@ package org.firstinspires.ftc.teamcode;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.SequentialAction;
-import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
-import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
 
-@Autonomous(name = "DECODE Auto RR", group = "Competition")
+@Autonomous(name = "DECODE 9 Artifact Auto RR (Red Side)", group = "Competition")
 public class DecodeAuto extends LinearOpMode {
 
-    // Hardware declarations
+    // Hardware declarations (Ensure these names match your configuration)
     private DcMotorEx intakeMotor;
     private DcMotorEx shooterMotor1;
     private DcMotorEx shooterMotor2;
-    private Servo gateServo;
+    private Servo gateServo; // Used for dropping/shooting artifacts
 
-    // Shooter constants (adjust for your robot)
-    private static final double SHOOTER_POWER = 0.85;
+    // Mechanism Constants
+    private static final double SHOOTER_POWER = 0.85; // Max speed for outtake mechanism
+    private static final double INTAKE_POWER = 0.9;   // High power for quick intake
 
-    // Gate positions
-    private static final double GATE_OPEN = 0.8;
-    private static final double GATE_CLOSED = 0.2;
-
-    // Intake power
-    private static final double INTAKE_POWER = 0.7;
+    // Servo Positions
+    private static final double GATE_OPEN = 0.8;      // Position to release an artifact
+    private static final double GATE_CLOSED = 0.2;    // Position to hold artifacts
 
     @Override
     public void runOpMode() throws InterruptedException {
         // Initialize hardware
-        intakeMotor = hardwareMap.get(DcMotorEx.class, "intakeMotor");
-        shooterMotor1 = hardwareMap.get(DcMotorEx.class, "shooterMotor1");
-        shooterMotor2 = hardwareMap.get(DcMotorEx.class, "shooterMotor2");
-        //gateServo = hardwareMap.get(Servo.class, "gateServo");
+        intakeMotor = hardwareMap.get(DcMotorEx.class, "IntakeMotor");
+        shooterMotor1 = hardwareMap.get(DcMotorEx.class, "RightOuttakeMotor");
+        shooterMotor2 = hardwareMap.get(DcMotorEx.class, "LeftOuttakeMotor");
+        gateServo = hardwareMap.get(Servo.class, "GateServo");
 
-        // Starting pose - Red alliance, left side
-        // Adjust based on your starting tile position
+        // === FIELD COORDINATE SETUP (Red Alliance, staying in X < 0) ===
+
+        // Starting pose: Red Alliance, Tile D1 (Approx -60, -36), facing the field
         Pose2d beginPose = new Pose2d(-60, -36, Math.toRadians(0));
 
         // Initialize MecanumDrive with starting pose
         MecanumDrive drive = new MecanumDrive(hardwareMap, beginPose);
 
-        // Build action sequences
+        // Scoring Position: A spot on the Red side facing the central scoring goal/backdrop
+        // The robot stays close to the wall but angles toward the scoring area.
+        Pose2d scoringPose = new Pose2d(-40, -40, Math.toRadians(135));
 
-        // 1. Leave starting zone and move to shooting position
-        TrajectoryActionBuilder tab1 = drive.actionBuilder(beginPose)
-                .lineToX(-48) // Leave starting zone (3 points)
-                .strafeToLinearHeading(new Vector2d(-36, -24), Math.toRadians(45)); // Move to shooting position
+        // Artifact Stacks (Two accessible stacks/piles on the Red side, sweeping along the Y-axis)
 
-        // 2. Optional: Get more artifacts after scoring
-        TrajectoryActionBuilder tab2 = drive.actionBuilder(new Pose2d(-36, -24, Math.toRadians(45)))
-                .strafeToLinearHeading(new Vector2d(-48, -48), Math.toRadians(0)); // Go to artifact pickup
+        // Stack 1: Closest to the center line (most dangerous, grab first)
+        Pose2d artifactStack1 = new Pose2d(-12, -40, Math.toRadians(0));
 
-        // 3. Return to shooting position
-        TrajectoryActionBuilder tab3 = drive.actionBuilder(new Pose2d(-48, -48, Math.toRadians(0)))
-                .strafeToLinearHeading(new Vector2d(-36, -24), Math.toRadians(45)); // Back to shoot
+        // Stack 2: Further back from the center, still along the same line (same Y, different X)
+        // This simulates sweeping back towards the alliance side for the second pile.
+        Pose2d artifactStack2 = new Pose2d(-28, -40, Math.toRadians(0));
 
-        // 4. Park in base zone
-        TrajectoryActionBuilder tab4 = drive.actionBuilder(new Pose2d(-36, -24, Math.toRadians(45)))
-                .strafeToLinearHeading(new Vector2d(-60, -48), Math.toRadians(0)); // Park in base
+        // Parking Position: Park near the scoring goal/wall for max points
+        Pose2d parkPose = new Pose2d(-60, -12, Math.toRadians(90));
 
-        // Create custom actions for game mechanisms
-//        Action closeGate = telemetryPacket -> {
-//            gateServo.setPosition(GATE_CLOSED);
-//            return false;
-//        };
+        // Ensure the gate is closed at the start to hold preloaded artifacts
+        gateServo.setPosition(GATE_CLOSED);
+
+
+        // === ROAD RUNNER TRAJECTORY ACTIONS ===
+
+        // 1. Leave start and move to scoring position
+        Action trajLeaveAndScore = drive.actionBuilder(beginPose)
+                .lineToX(-48) // Move off the wall
+                .splineToLinearHeading(scoringPose, Math.toRadians(45)) // Curve to the scoring angle
+                .build();
+
+        // 2. Go to the first artifact stack (from scoringPose)
+        // This uses a lineToX to quickly move to the collection spot
+        Action trajToIntake1 = drive.actionBuilder(scoringPose)
+                .setTangent(Math.toRadians(0))
+                .splineToLinearHeading(artifactStack1, Math.toRadians(0))
+                .build();
+
+        // 3. Return to scoring position from the first stack
+        Action trajScoreFromIntake1 = drive.actionBuilder(artifactStack1)
+                .setTangent(Math.toRadians(180))
+                .splineToLinearHeading(scoringPose, Math.toRadians(225))
+                .build();
+
+        // 4. Go to the second artifact stack
+        // The robot moves from the scoring position directly back to the second stack location
+        Action trajToIntake2 = drive.actionBuilder(scoringPose)
+                .setTangent(Math.toRadians(0))
+                .splineToLinearHeading(artifactStack2, Math.toRadians(0))
+                .build();
+
+        // 5. Return to scoring position from the second stack
+        Action trajScoreFromIntake2 = drive.actionBuilder(artifactStack2)
+                .setTangent(Math.toRadians(180))
+                .splineToLinearHeading(scoringPose, Math.toRadians(225))
+                .build();
+
+        // 6. Park in the base zone (from scoringPose)
+        Action trajPark = drive.actionBuilder(scoringPose)
+                .strafeToLinearHeading(parkPose.position, parkPose.heading)
+                .build();
+
+
+        // === CUSTOM MECHANISM ACTIONS ===
+        // (These actions remain the same)
 
         Action spinUpShooter = telemetryPacket -> {
             shooterMotor1.setPower(SHOOTER_POWER);
             shooterMotor2.setPower(SHOOTER_POWER);
-            sleep(1000); // Let shooter reach speed
-            return false;
+            sleep(1000); // Wait for shooter to reach speed
+            return false; // Action complete
         };
 
         Action shootThreeArtifacts = telemetryPacket -> {
             for (int i = 0; i < 3; i++) {
-                intakeMotor.setPower(INTAKE_POWER);
-                sleep(500);
-                intakeMotor.setPower(0);
-                sleep(300);
+                // Open gate to release one artifact
+                gateServo.setPosition(GATE_OPEN);
+                sleep(200); // Dwell time for artifact to pass
+
+                // Close gate to prepare for next artifact
+                gateServo.setPosition(GATE_CLOSED);
+                sleep(300); // Time for mechanism to reset
             }
-            return false;
+            return false; // Action complete
         };
 
         Action stopShooter = telemetryPacket -> {
             shooterMotor1.setPower(0);
             shooterMotor2.setPower(0);
-            return false;
+            return false; // Action complete
         };
 
-        Action intakeArtifacts = telemetryPacket -> {
+        Action intakeThreeArtifacts = telemetryPacket -> {
             intakeMotor.setPower(INTAKE_POWER);
-            sleep(2000);
+            sleep(2500); // Time to intake 3 artifacts
             intakeMotor.setPower(0);
-            return false;
+            return false; // Action complete
         };
 
-        telemetry.addData("Status", "Initialized - DECODE Auto with Road Runner");
+        telemetry.addData("Status", "Initialized - DECODE 9 Artifact Auto (Red Side)");
         telemetry.addData("Starting Pose", beginPose.toString());
         telemetry.update();
 
@@ -109,41 +146,38 @@ public class DecodeAuto extends LinearOpMode {
 
         if (isStopRequested()) return;
 
-        // === AUTONOMOUS SEQUENCE ===
-
-        // Simple reliable auto: Leave + Score preloads + Park
+        // === AUTONOMOUS SEQUENCE (9 ARTIFACTS - Two Field Intakes) ===
         Actions.runBlocking(
                 new SequentialAction(
-                        //closeGate,
-                        tab1.build(), // Leave zone and move to shooting position
+                        // 1. Score 3 pre-loaded artifacts
+                        trajLeaveAndScore,
                         spinUpShooter,
-                        shootThreeArtifacts, // Score 3 preloaded artifacts
+                        shootThreeArtifacts,
                         stopShooter,
-                        tab4.build() // Park in base zone
+
+                        // 2. Go to 1st stack, intake, and score (3 more)
+                        trajToIntake1,
+                        intakeThreeArtifacts,
+                        trajScoreFromIntake1,
+                        spinUpShooter,
+                        shootThreeArtifacts,
+                        stopShooter,
+
+                        // 3. Go to 2nd stack, intake, and score (3 more)
+                        trajToIntake2,
+                        intakeThreeArtifacts,
+                        trajScoreFromIntake2,
+                        spinUpShooter,
+                        shootThreeArtifacts,
+                        stopShooter,
+
+                        // 4. Park
+                        trajPark
                 )
         );
 
-        /* ADVANCED AUTO - Uncomment if you want to pick up more artifacts
-        Actions.runBlocking(
-            new SequentialAction(
-                closeGate,
-                tab1.build(), // Leave + move to shooting position
-                spinUpShooter,
-                shootThreeArtifacts, // Score preloads
-                stopShooter,
-                tab2.build(), // Go get more artifacts
-                intakeArtifacts,
-                tab3.build(), // Return to shooting position
-                spinUpShooter,
-                shootThreeArtifacts, // Score additional artifacts
-                stopShooter,
-                tab4.build() // Park
-            )
-        );
-        */
-
         telemetry.addData("Status", "Auto Complete!");
-        telemetry.addData("Estimated Points", "Leave(3) + Classified(9) + Park(5+) = 17+");
+        telemetry.addData("Total Artifacts Scored", "9 (Max on Red Side)");
         telemetry.update();
 
         sleep(1000);

@@ -15,10 +15,10 @@ public class MeepMeepTesting {
         Pose2d scoringPose = new Pose2d(-40, -40, Math.toRadians(50));
 
         // --- NOTE: The order of visiting these is now different ---
-        Pose2d artifactStack1 = new Pose2d(-12, -46, Math.toRadians(270));
-        Pose2d artifactStack2 = new Pose2d(12, -46, Math.toRadians(270));
+        Pose2d artifactStack1 = new Pose2d(-12, -40, Math.toRadians(0)); // Furthest stack
+        Pose2d artifactStack2 = new Pose2d(-28, -40, Math.toRadians(0)); // Closest stack
 
-        Pose2d parkPose = new Pose2d(37.5, -36, Math.toRadians(90));
+        Pose2d parkPose = new Pose2d(-60, -12, Math.toRadians(90));
 
         // Bot for the "DECODE 9 Artifact Auto RR (Red Side)"
         RoadRunnerBotEntity autoBot = new DefaultBotBuilder(meepMeep)
@@ -35,16 +35,16 @@ public class MeepMeepTesting {
 
                 // 2. Go to CLOSEST stack (Stack 2), intake, and return to score
                 .setTangent(Math.toRadians(0))
-                .splineToLinearHeading(artifactStack1, Math.toRadians(270)) // Path to closest stack
-                //.lineToY(-52) // Simulate intaking
+                .splineToLinearHeading(artifactStack2, Math.toRadians(0)) // Path to closest stack
+                .waitSeconds(2.5) // Simulate intaking
                 .setTangent(Math.toRadians(180))
                 .splineToLinearHeading(scoringPose, Math.toRadians(225))
                 .waitSeconds(1.5) // Simulate shooting
 
                 // 3. Go to FURTHEST stack (Stack 1), intake, and return to score
                 .setTangent(Math.toRadians(0))
-                .splineToLinearHeading(artifactStack2, Math.toRadians(270)) // Path to furthest stack
-                // .lineToY(-52)
+                .splineToLinearHeading(artifactStack1, Math.toRadians(0)) // Path to furthest stack
+                .waitSeconds(2.5) // Simulate intaking
                 .setTangent(Math.toRadians(180))
                 .splineToLinearHeading(scoringPose, Math.toRadians(225))
                 .waitSeconds(1.5) // Simulate shooting

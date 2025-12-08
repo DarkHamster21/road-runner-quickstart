@@ -18,8 +18,6 @@ public class Main extends LinearOpMode {
     DcMotorEx frontRightMotor;
     DcMotorEx backRightMotor;
 
-
-
     public void Controller1Init() {
         frontLeftMotor = hardwareMap.get(DcMotorEx.class, "FrontLeftMotor");
         backLeftMotor = hardwareMap.get(DcMotorEx.class, "BackLeftMotor");
@@ -55,17 +53,20 @@ public class Main extends LinearOpMode {
     Servo IntakeServo;
     Servo OuttakeServo;
 
-    final double Spindexder_RPM = 117;
-    final double Seconds_Per_Rev = (1/(Spindexder_RPM /60));
-    final double Spindexer_move_120 = Seconds_Per_Rev/3;
-    final double Servo_Start_Position = 0.05;
-    final double IntakeServoEndPosition = 0.2;
-    final double OuttakeServoEndPosition = 0.3;
+    // Intake Servo Angles
+    final double IntakeServoDefaultAngle = 0.555;
+    final double IntakeServoDepositeAngle = 0.42;
+
+    // Outtake Servo Angles
+    final double OuttakeServoDefaultAngle = 0;
+    final double OuttakeServoShootAngle = 0.2;
 
     final double SpindexerEncoderPulsesPerRevolution = (1 + (46.0 / 17.0)) * (1 + (46.0 / 17.0)) * (1 + (46.0 / 17.0)) * 28;
-
-
     double spinDexerRotation = 0;
+
+    boolean IntakeToggle = false;
+    boolean PreviousIntakeGamepad;
+
 
 
 
@@ -84,8 +85,9 @@ public class Main extends LinearOpMode {
         RightOuttakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         SpindexerMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        IntakeServo.setPosition(Servo_Start_Position);
-        OuttakeServo.setPosition(Servo_Start_Position);
+
+        IntakeServo.setPosition(IntakeServoDefaultAngle);
+        OuttakeServo.setPosition(OuttakeServoDefaultAngle);
     }
 
     public void Controller2Loop() {
@@ -99,11 +101,20 @@ public class Main extends LinearOpMode {
             //telemetry.addLine("Power 0");
         }
 
-        if (gamepad2.x){
-            IntakeMotor.setPower(1);
-            sleep(1500);
-            IntakeMotor.setPower(0);
+        if (gamepad2.x && !PreviousIntakeGamepad) {
+            IntakeToggle = !IntakeToggle;
         }
+
+        PreviousIntakeGamepad = gamepad2.x;
+
+        if (IntakeToggle){
+            IntakeMotor.setPower(1); // On
+        } else {
+            IntakeMotor.setPower(0); // Off
+        }
+
+
+
         if (gamepad2.y && !previousGamepadY){
 
             // rotates by 1/3 of a total revolution
@@ -114,16 +125,17 @@ public class Main extends LinearOpMode {
             SpindexerMotor.setPower(0.3);
         }
         if (gamepad2.dpad_up){
-            IntakeServo.setPosition(IntakeServoEndPosition);
+            IntakeServo.setPosition(IntakeServoDepositeAngle);
             sleep(1000);
-            IntakeServo.setPosition(Servo_Start_Position);
+            IntakeServo.setPosition(IntakeServoDefaultAngle);
         }
+
         if (gamepad2.dpad_down){
-            OuttakeServo.setPosition(OuttakeServoEndPosition);
+            OuttakeServo.setPosition(OuttakeServoShootAngle);
             sleep(1000);
-            OuttakeServo.setPosition(Servo_Start_Position);
+            OuttakeServo.setPosition(OuttakeServoDefaultAngle);
         }
-        previousGamepadY = gamepad1.y;
+        previousGamepadY = gamepad2.y;
     }
 
 

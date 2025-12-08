@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
-@Autonomous(name = "DECODE 9 Artifact Auto RR (Red Side)", group = "Competition")
+@Autonomous(name = "DECODE 9 Artifact Auto RR (Blue Side)", group = "Competition")
 public class DecodeAuto extends LinearOpMode {
 
     // Hardware declarations (Ensure these names match your configuration)

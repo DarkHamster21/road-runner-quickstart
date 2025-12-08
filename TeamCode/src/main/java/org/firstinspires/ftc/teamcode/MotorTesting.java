@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
 
-@TeleOp
+@TeleOp(name = "Motor Testing")
 public class MotorTesting extends LinearOpMode {
 
     @Override
@@ -18,8 +18,8 @@ public class MotorTesting extends LinearOpMode {
         final double Spindexder_RPM = 117;
         final double Seconds_Per_Rev = (1/(Spindexder_RPM /60));
         final double Spindexer_move_120 = Seconds_Per_Rev/3;
-        final double Servo_Start_Position = 0.05;
-        final double IntakeServoEndPosition = 0.2;
+        final double Servo_Start_Position = 0.15;
+        final double IntakeServoEndPosition = 0.35;
         final double OuttakeServoEndPosition = 0.3;
 
         final double SpindexerEncoderPulsesPerRevolution = (1 + (46.0 / 17.0)) * (1 + (46.0 / 17.0)) * (1 + (46.0 / 17.0)) * 28;
@@ -39,8 +39,8 @@ public class MotorTesting extends LinearOpMode {
 
 
 
-        frontRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        backRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        frontLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        backLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         SpindexerMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         LeftOuttakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         RightOuttakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -51,6 +51,7 @@ public class MotorTesting extends LinearOpMode {
 
 
         boolean previousGamepadY = false;
+        boolean previousGamepadUp = false;
 
         waitForStart();
 
@@ -63,7 +64,7 @@ public class MotorTesting extends LinearOpMode {
 
             double y = -gamepad1.left_stick_y;
             double x = gamepad1.left_stick_x * 1.1;
-            double rx = gamepad1.right_stick_x;
+            double rx = -gamepad1.right_stick_x;
 
             double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
             double frontLeftPower = (y + x + rx) / denominator;
@@ -98,13 +99,25 @@ public class MotorTesting extends LinearOpMode {
 
                 SpindexerMotor.setTargetPosition((int) spinDexerRotation);
                 SpindexerMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                SpindexerMotor.setPower(0.3);
+                SpindexerMotor.setPower(0.6);
             }
             if (gamepad1.dpad_up){
                 IntakeServo.setPosition(IntakeServoEndPosition);
-                sleep(1000);
+                sleep(500);
                 IntakeServo.setPosition(Servo_Start_Position);
+
+
             }
+            if (gamepad1.dpad_left && !previousGamepadUp){
+                spinDexerRotation += SpindexerEncoderPulsesPerRevolution/3;
+
+                SpindexerMotor.setTargetPosition((int) spinDexerRotation);
+                SpindexerMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                SpindexerMotor.setPower(1);
+                sleep(800);
+                IntakeServo.setPosition(IntakeServoEndPosition);
+                sleep(500);
+                IntakeServo.setPosition(Servo_Start_Position);}
             if (gamepad1.dpad_down){
                 OuttakeServo.setPosition(OuttakeServoEndPosition);
                 sleep(1000);
@@ -112,6 +125,7 @@ public class MotorTesting extends LinearOpMode {
             }
 
             previousGamepadY = gamepad1.y;
+            previousGamepadUp= gamepad1.dpad_up;
 
 
 

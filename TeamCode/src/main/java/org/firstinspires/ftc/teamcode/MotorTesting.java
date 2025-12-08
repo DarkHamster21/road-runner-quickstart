@@ -18,7 +18,7 @@ public class MotorTesting extends LinearOpMode {
         final double Spindexder_RPM = 117;
         final double Seconds_Per_Rev = (1/(Spindexder_RPM /60));
         final double Spindexer_move_120 = Seconds_Per_Rev/3;
-        final double Servo_Start_Position = 0.15;
+        final double Servo_Start_Position = 0;
         final double IntakeServoEndPosition = 0.35;
         final double OuttakeServoEndPosition = 0.3;
 
@@ -52,6 +52,7 @@ public class MotorTesting extends LinearOpMode {
 
         boolean previousGamepadY = false;
         boolean previousGamepadUp = false;
+        float TempServoPos = 0;
 
         waitForStart();
 
@@ -76,6 +77,12 @@ public class MotorTesting extends LinearOpMode {
             backLeftMotor.setPower(backLeftPower);
             frontRightMotor.setPower(frontRightPower);
             backRightMotor.setPower(backRightPower);
+
+            if (gamepad1.left_bumper){
+                TempServoPos = gamepad1.right_stick_y;
+                IntakeServo.setPosition(TempServoPos);
+                sleep(500);
+            }
 
             if (gamepad1.a) {
                 LeftOuttakeMotor.setPower(1);
@@ -136,6 +143,7 @@ public class MotorTesting extends LinearOpMode {
             telemetry.addData("Intake Servo Position",IntakeServo.getPosition());
             telemetry.addData("Outtake Servo Position",OuttakeServo.getPosition());
             telemetry.addData("Spindexer Encoder Counts", spinDexerRotation);
+
 
             telemetry.update();
         }

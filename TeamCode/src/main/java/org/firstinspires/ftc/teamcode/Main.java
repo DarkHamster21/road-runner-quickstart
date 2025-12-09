@@ -53,6 +53,16 @@ public class Main extends LinearOpMode {
     Servo IntakeServo;
     Servo OuttakeServo;
 
+    // intake servo stuff
+    double intakeStartTime = 0;
+    boolean intakeDepositing = false;
+    final double intakeDepositTime = 1.0;
+
+    // outtake servo stuff
+    double outtakeStartTime = 0;
+    boolean outtakeShooting = false;
+    final double outtakeShootTime = 1.0;
+
     // Intake Servo Angles
     final double IntakeServoDefaultAngle = 0.555;
     final double IntakeServoDepositeAngle = 0.42;
@@ -66,11 +76,16 @@ public class Main extends LinearOpMode {
 
     boolean IntakeToggle = false;
     boolean PreviousIntakeGamepad;
-
-
-
-
     boolean previousGamepadY = false;
+
+    boolean PreviousGamepadOuttake = false;
+    boolean OuttakeEnabled = false;
+
+    final double MaxOuttakeVelocity = 7.25; // rotations per seconds
+    double OuttakeVelocity = MaxOuttakeVelocity * 0.75; // in rotations per second
+    final double OuttakeMotorPulsesPerRevolution = ((((1+(46.0/17.0))) * (1+(46.0/17.0))) * 28.0);
+
+
     public void Controller2Init() {
         LeftOuttakeMotor = hardwareMap.get(DcMotorEx.class, "LeftOuttakeMotor");
         RightOuttakeMotor = hardwareMap.get(DcMotorEx.class, "RightOuttakeMotor");
@@ -80,9 +95,9 @@ public class Main extends LinearOpMode {
         IntakeServo = hardwareMap.get(Servo.class, "IntakeServo");
         OuttakeServo = hardwareMap.get(Servo.class, "OuttakeServo");
 
-        SpindexerMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         LeftOuttakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        RightOuttakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        SpindexerMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         SpindexerMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
@@ -91,20 +106,25 @@ public class Main extends LinearOpMode {
     }
 
     public void Controller2Loop() {
-        if (gamepad2.a) {
-            LeftOuttakeMotor.setPower(1);
-            RightOuttakeMotor.setPower(-1);
-            //telemetry.addLine("Power 1");
+
+        // Outtake toggling
+        if (gamepad2.a && !PreviousGamepadOuttake) {
+            OuttakeEnabled = !OuttakeEnabled;
+        }
+        PreviousGamepadOuttake = gamepad2.a;
+
+        if(OuttakeEnabled) {
+            RightOuttakeMotor.setVelocity(OuttakeMotorPulsesPerRevolution * OuttakeVelocity);
+            LeftOuttakeMotor.setVelocity(OuttakeMotorPulsesPerRevolution * OuttakeVelocity);
         } else {
-            LeftOuttakeMotor.setPower(0);
-            RightOuttakeMotor.setPower(0);
-            //telemetry.addLine("Power 0");
+            RightOuttakeMotor.setVelocity(0);
+            LeftOuttakeMotor.setVelocity(0);
         }
 
+        // intake related
         if (gamepad2.x && !PreviousIntakeGamepad) {
             IntakeToggle = !IntakeToggle;
         }
-
         PreviousIntakeGamepad = gamepad2.x;
 
         if (IntakeToggle){
@@ -113,10 +133,7 @@ public class Main extends LinearOpMode {
             IntakeMotor.setPower(0); // Off
         }
 
-
-
         if (gamepad2.y && !previousGamepadY){
-
             // rotates by 1/3 of a total revolution
             spinDexerRotation += SpindexerEncoderPulsesPerRevolution/3;
 
@@ -124,18 +141,34 @@ public class Main extends LinearOpMode {
             SpindexerMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             SpindexerMotor.setPower(0.3);
         }
-        if (gamepad2.dpad_up){
+
+        previousGamepadY = gamepad2.y;
+
+        // Trigger intake deposit
+        if (gamepad2.dpad_up && !intakeDepositing ) { // && (outtakeStartTime + outtakeShootTime) <= getRuntime()
+            intakeDepositing = true;
+            intakeStartTime = getRuntime();
             IntakeServo.setPosition(IntakeServoDepositeAngle);
-            sleep(1000);
+        }
+
+        // Trigger outtake shoot
+        if (gamepad2.dpad_down && !outtakeShooting) {
+            outtakeShooting = true;
+            outtakeStartTime = getRuntime();
+            OuttakeServo.setPosition(OuttakeServoShootAngle);
+        }
+
+        // Intake timing reset
+        if (intakeDepositing && getRuntime() - intakeStartTime >= intakeDepositTime) {
+            intakeDepositing = false;
             IntakeServo.setPosition(IntakeServoDefaultAngle);
         }
 
-        if (gamepad2.dpad_down){
-            OuttakeServo.setPosition(OuttakeServoShootAngle);
-            sleep(1000);
+        // Outtake timing reset
+        if (outtakeShooting && getRuntime() - outtakeStartTime >= outtakeShootTime) {
+            outtakeShooting = false;
             OuttakeServo.setPosition(OuttakeServoDefaultAngle);
         }
-        previousGamepadY = gamepad2.y;
     }
 
 

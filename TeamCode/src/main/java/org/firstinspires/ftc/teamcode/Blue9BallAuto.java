@@ -189,8 +189,8 @@ public class Blue9BallAuto extends LinearOpMode {
                 .build();
         // **MODIFIED**: Return trajectory now starts from the correct end position
         Action trajScoreFromIntake1 = drive.actionBuilder(endOfArtifactStack1)
-                .setTangent(Math.toRadians(180))
-                .splineToLinearHeading(scoringPose, Math.toRadians(225))
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(scoringPose, Math.toRadians(180))
                 .build();
 
         // **MODIFIED**: Single action for the second stack
@@ -207,8 +207,8 @@ public class Blue9BallAuto extends LinearOpMode {
 
         // **MODIFIED**: Return trajectory for the second stack
         Action trajScoreFromIntake2 = drive.actionBuilder(endOfArtifactStack2)
-                .setTangent(Math.toRadians(180))
-                .splineToLinearHeading(scoringPose, Math.toRadians(225))
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(scoringPose, Math.toRadians(180))
                 .build();
 
         Action trajPark = drive.actionBuilder(scoringPose)

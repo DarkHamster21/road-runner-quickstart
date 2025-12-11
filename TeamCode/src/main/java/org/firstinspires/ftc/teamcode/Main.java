@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
 
-@TeleOp(name = "Main", group = "Competition")
+@TeleOp(name = "2025 Decode Comp TeleOp", group = "Competition")
 public class Main extends LinearOpMode {
 
     // Controller 1 Stuff -----------------------------------

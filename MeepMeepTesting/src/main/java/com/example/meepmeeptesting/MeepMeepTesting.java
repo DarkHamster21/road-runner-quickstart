@@ -12,7 +12,7 @@ public class MeepMeepTesting {
 
         // Define poses from your latest DecodeAuto file
         Pose2d beginPose = new Pose2d(-63, 36, Math.toRadians(0));
-        Pose2d scoringPose = new Pose2d(-40, 40, Math.toRadians(310));
+        Pose2d scoringPose = new Pose2d(-15, 15, Math.toRadians(310));
 
         // --- NOTE: The order of visiting these is now different ---
         Pose2d artifactStack1 = new Pose2d(-12, 32, Math.toRadians(90)); // Furthest stack
@@ -34,7 +34,7 @@ public class MeepMeepTesting {
         autoBot.runAction(autoBot.getDrive().actionBuilder(beginPose)
                 // 1. Leave start and move to scoring position
                 .lineToX(-48)
-                .splineToLinearHeading(scoringPose, Math.toRadians(315))
+                .splineToLinearHeading(scoringPose, Math.toRadians(310))
                 .waitSeconds(1.5) // Simulate shooting preloads
 
                 // 2. Go to CLOSEST stack (Stack 2), intake, and return to score
@@ -43,8 +43,8 @@ public class MeepMeepTesting {
                 .waitSeconds(2.5)
                 .splineToLinearHeading(EndArtifactStack1, Math.toRadians(90))
                 .waitSeconds(2.5) // Simulate intaking
-                .setTangent(Math.toRadians(180))
-                .splineToLinearHeading(scoringPose, Math.toRadians(90))
+                .setTangent(Math.toRadians(270))
+                .splineToLinearHeading(scoringPose, Math.toRadians(0))
                 .waitSeconds(1.5) // Simulate shooting
 
                 // 3. Go to FURTHEST stack (Stack 1), intake, and return to score
@@ -52,8 +52,8 @@ public class MeepMeepTesting {
                 .splineToLinearHeading(artifactStack2, Math.toRadians(90)) // Path to furthest stack
                 .splineToLinearHeading(EndArtifactStack2, Math.toRadians(90))
                 .waitSeconds(2.5) // Simulate intaking
-                .setTangent(Math.toRadians(180))
-                .splineToLinearHeading(scoringPose, Math.toRadians(90))
+                .setTangent(Math.toRadians(270))
+                .splineToLinearHeading(scoringPose, Math.toRadians(310))
                 .waitSeconds(1.5) // Simulate shooting
 
                 // 4. Park

@@ -39,10 +39,10 @@ public class Main extends LinearOpMode {
         double frontRightPower = (y - x - rx) / denominator;
         double backRightPower = (y + x - rx) / denominator;
 
-        frontLeftMotor.setPower(frontLeftPower);
-        backLeftMotor.setPower(backLeftPower);
-        frontRightMotor.setPower(frontRightPower);
-        backRightMotor.setPower(backRightPower);
+        frontLeftMotor.setVelocity(frontLeftPower*100);
+        backLeftMotor.setVelocity(backLeftPower*100);
+        frontRightMotor.setVelocity(frontRightPower*100);
+        backRightMotor.setVelocity(backRightPower*100);
     }
 
     // Controller 2 stuff -----------------------
@@ -53,6 +53,8 @@ public class Main extends LinearOpMode {
     Servo IntakeServo;
     Servo OuttakeServo;
 
+    // intake motor stuff
+    final double IntakeVelocity = 2787.9;
     // intake servo stuff
     double intakeStartTime = 0;
     boolean intakeDepositing = false;
@@ -82,7 +84,7 @@ public class Main extends LinearOpMode {
     boolean OuttakeEnabled = false;
 
     final double MaxOuttakeVelocity = 7.25; // rotations per seconds
-    double OuttakeVelocity = MaxOuttakeVelocity * 0.75; // in rotations per second
+    double OuttakeVelocity = MaxOuttakeVelocity * 1; // in rotations per second
     final double OuttakeMotorPulsesPerRevolution = ((((1+(46.0/17.0))) * (1+(46.0/17.0))) * 28.0);
 
 
@@ -128,9 +130,9 @@ public class Main extends LinearOpMode {
         PreviousIntakeGamepad = gamepad2.x;
 
         if (IntakeToggle){
-            IntakeMotor.setPower(1); // On
+            IntakeMotor.setVelocity(IntakeVelocity); // On
         } else {
-            IntakeMotor.setPower(0); // Off
+            IntakeMotor.setVelocity(0); // Off
         }
 
         if (gamepad2.y && !previousGamepadY){
@@ -139,7 +141,7 @@ public class Main extends LinearOpMode {
 
             SpindexerMotor.setTargetPosition((int) spinDexerRotation);
             SpindexerMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            SpindexerMotor.setPower(0.3);
+            SpindexerMotor.setPower(0.7);
         }
 
         previousGamepadY = gamepad2.y;

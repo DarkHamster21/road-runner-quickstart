@@ -6,12 +6,13 @@ import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
-@Autonomous(name = "DECODE 9 Artifact Auto RR (Blue Side)", group = "Competition")
-public class DecodeAuto extends LinearOpMode {
+@Autonomous(name = "9 Ball BLUE auto", group = "Competition")
+public class Blue9BallAuto extends LinearOpMode {
 
     // Hardware declarations (Ensure these names match your configuration)
     private DcMotorEx IntakeMotor;
@@ -19,16 +20,28 @@ public class DecodeAuto extends LinearOpMode {
     private DcMotorEx RightOuttakeMotor;
     private DcMotorEx SpindexerMotor;
 
-    private Servo gateServo; // Used for dropping/shooting artifacts
+    private Servo IntakeServo; // Used for dropping/shooting artifacts
+    private Servo OutakeServo;
 
     // Mechanism Constants
     private static final double SHOOTER_POWER = 0.85; // Max speed for outtake mechanism
-    private static final double INTAKE_POWER = 0.9;   // High power for quick intake
+    private static final double IntakeVelocity = 2787.9;
     private static  final double Spin = 0.5;
 
     // Servo Positions
-    private static final double GATE_OPEN = 0.8;      // Position to release an artifact
-    private static final double GATE_CLOSED = 0.2;    // Position to hold artifacts
+    private static final double INTAKE_START_POSITION= 0.555;
+    private static final double INTAKE_END_POSITION = 0.42;
+
+    final double OuttakeServoDefaultAngle = 0;
+    final double OuttakeServoShootAngle = 0.2;
+
+
+    final double SpindexerEncoderPulsesPerRevolution = (1 + (46.0 / 17.0)) * (1 + (46.0 / 17.0)) * (1 + (46.0 / 17.0)) * 28;
+    double spinDexerRotation = 0;
+
+    final double MaxOuttakeVelocity = 7.25; // rotations per seconds
+    double OuttakeVelocity = MaxOuttakeVelocity * 1; // in rotations per second
+    final double OuttakeMotorPulsesPerRevolution = ((((1+(46.0/17.0))) * (1+(46.0/17.0))) * 28.0);
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -36,8 +49,10 @@ public class DecodeAuto extends LinearOpMode {
         IntakeMotor = hardwareMap.get(DcMotorEx.class, "IntakeMotor");
         LeftOuttakeMotor = hardwareMap.get(DcMotorEx.class, "RightOuttakeMotor");
         RightOuttakeMotor = hardwareMap.get(DcMotorEx.class, "LeftOuttakeMotor");
+        SpindexerMotor = hardwareMap.get(DcMotorEx.class, "SpindexerMotor");
         RightOuttakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        gateServo = hardwareMap.get(Servo.class, "GateServo");
+        IntakeServo = hardwareMap.get(Servo.class, "IntakeServo");
+        OutakeServo = hardwareMap.get(Servo.class,"OuttakeServo");
 
         // === FIELD COORDINATE SETUP (Red Alliance, staying in X < 0) ===
 
@@ -63,7 +78,11 @@ public class DecodeAuto extends LinearOpMode {
         Pose2d parkPose = new Pose2d(37.5, -36, Math.toRadians(90));
 
         // Ensure the gate is closed at the start to hold preloaded artifacts
-        gateServo.setPosition(GATE_CLOSED);
+        IntakeServo.setPosition(INTAKE_START_POSITION);
+        OutakeServo.setPosition(OuttakeServoDefaultAngle);
+        SpindexerMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        SpindexerMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
 
         // === ROAD RUNNER TRAJECTORY ACTIONS ===
@@ -108,37 +127,60 @@ public class DecodeAuto extends LinearOpMode {
 
         // === CUSTOM MECHANISM ACTIONS ===
         // (These actions remain the same)
-
+        Action MoveSpindexer = telemetryPacket -> {
+            // rotates by 1/3 of a total revolution
+            spinDexerRotation += SpindexerEncoderPulsesPerRevolution/3;
+            SpindexerMotor.setTargetPosition((int) spinDexerRotation);
+            SpindexerMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            SpindexerMotor.setPower(0.6);
+            sleep(300);
+            return false;
+        };
         Action spinUpShooter = telemetryPacket -> {
-            LeftOuttakeMotor.setPower(SHOOTER_POWER);
-            RightOuttakeMotor.setPower(SHOOTER_POWER);
-            sleep(1000); // Wait for shooter to reach speed
+            RightOuttakeMotor.setVelocity(OuttakeMotorPulsesPerRevolution * OuttakeVelocity);
+            LeftOuttakeMotor.setVelocity(OuttakeMotorPulsesPerRevolution * OuttakeVelocity);
+            sleep(200); // Wait for shooter to reach speed
             return false; // Action complete
         };
 
         Action shootThreeArtifacts = telemetryPacket -> {
             for (int i = 0; i < 3; i++) {
                 // Open gate to release one artifact
-                gateServo.setPosition(GATE_OPEN);
+                IntakeServo.setPosition(INTAKE_END_POSITION);
                 sleep(200); // Dwell time for artifact to pass
 
                 // Close gate to prepare for next artifact
-                gateServo.setPosition(GATE_CLOSED);
-                sleep(300); // Time for mechanism to reset
+                IntakeServo.setPosition(INTAKE_START_POSITION);
+                sleep(200); // Time for mechanism to reset
+                spinDexerRotation += SpindexerEncoderPulsesPerRevolution/3;
+                SpindexerMotor.setTargetPosition((int) spinDexerRotation);
+                SpindexerMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                SpindexerMotor.setPower(0.8);
+                sleep(400);
+                OutakeServo.setPosition(OuttakeServoShootAngle);
+                sleep(300);
+                OutakeServo.setPosition(OuttakeServoDefaultAngle);
+
             }
             return false; // Action complete
         };
 
         Action stopShooter = telemetryPacket -> {
-            LeftOuttakeMotor.setPower(0);
-            RightOuttakeMotor.setPower(0);
+            LeftOuttakeMotor.setVelocity(0);
+            RightOuttakeMotor.setVelocity(0);
             return false; // Action complete
         };
 
         Action intakeThreeArtifacts = telemetryPacket -> {
-            IntakeMotor.setPower(INTAKE_POWER);
-            sleep(2500); // Time to intake 3 artifacts
-            IntakeMotor.setPower(0);
+            IntakeMotor.setVelocity(IntakeVelocity);
+            sleep(500); // Time to intake 3 artifacts
+            for (int i = 0; i < 2; i++) {
+            SpindexerMotor.setTargetPosition((int) spinDexerRotation);
+            SpindexerMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            SpindexerMotor.setPower(0.6);
+            sleep(200);
+            }
+            IntakeMotor.setVelocity(0);
             return false; // Action complete
         };
 
@@ -154,29 +196,31 @@ public class DecodeAuto extends LinearOpMode {
         Actions.runBlocking(
                 new SequentialAction(
                         // 1. Score 3 pre-loaded artifacts
-                        trajLeaveAndScore,
+                        //trajLeaveAndScore,
+
                         spinUpShooter,
                         shootThreeArtifacts,
+                        //MoveSpindexer,
                         stopShooter,
 
                         // 2. Go to 1st stack, intake, and score (3 more)
-                        trajToIntake1,
+                        //trajToIntake1,
                         intakeThreeArtifacts,
-                        trajScoreFromIntake1,
+                       //trajScoreFromIntake1,
                         spinUpShooter,
-                        shootThreeArtifacts,
+                        //shootThreeArtifacts,
                         stopShooter,
 
                         // 3. Go to 2nd stack, intake, and score (3 more)
-                        trajToIntake2,
+                        //trajToIntake2,
                         intakeThreeArtifacts,
-                        trajScoreFromIntake2,
+                        //trajScoreFromIntake2,
                         spinUpShooter,
                         shootThreeArtifacts,
-                        stopShooter,
+                        stopShooter
 
                         // 4. Park
-                        trajPark
+                        //trajPark
                 )
         );
 

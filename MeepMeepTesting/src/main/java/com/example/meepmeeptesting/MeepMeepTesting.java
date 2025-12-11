@@ -11,8 +11,8 @@ public class MeepMeepTesting {
         MeepMeep meepMeep = new MeepMeep(800);
 
         // Define poses from your latest DecodeAuto file
-        Pose2d beginPose = new Pose2d(-63, -36, Math.toRadians(0));
-        Pose2d scoringPose = new Pose2d(-40, -40, Math.toRadians(50));
+        Pose2d beginPose = new Pose2d(63, 36, Math.toRadians(0));
+        Pose2d scoringPose = new Pose2d(40, 40, Math.toRadians(50));
 
         // --- NOTE: The order of visiting these is now different ---
         Pose2d artifactStack1 = new Pose2d(-12, -40, Math.toRadians(0)); // Furthest stack

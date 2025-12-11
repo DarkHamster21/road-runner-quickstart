@@ -32,7 +32,8 @@ public class Red9BallAuto extends LinearOpMode {
     final double SpindexerEncoderPulsesPerRevolution = (1 + (46.0 / 17.0)) * (1 + (46.0 / 17.0)) * (1 + (46.0 / 17.0)) * 28;
     double spindexerRotation = 0;
     final double MaxOuttakeVelocity = 7.25;
-    double OuttakeVelocity = MaxOuttakeVelocity * 1;
+    final double OuttakeVelocityControl = 0.8;
+    double OuttakeVelocity = MaxOuttakeVelocity * OuttakeVelocityControl;
     final double OuttakeMotorPulsesPerRevolution = ((((1+(46.0/17.0))) * (1+(46.0/17.0))) * 28.0);
 
     int spindexerState = 0;

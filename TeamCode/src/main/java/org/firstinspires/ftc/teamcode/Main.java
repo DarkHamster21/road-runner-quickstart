@@ -87,7 +87,8 @@ public class Main extends LinearOpMode {
     boolean OuttakeEnabled = false;
 
     final double MaxOuttakeVelocity = 7.25; // rotations per seconds
-    double OuttakeVelocity = MaxOuttakeVelocity * 1; // in rotations per second
+    final double OuttakeVelocityControl = 0.8;
+    double OuttakeVelocity = MaxOuttakeVelocity * OuttakeVelocityControl;
     final double OuttakeMotorPulsesPerRevolution = ((((1+(46.0/17.0))) * (1+(46.0/17.0))) * 28.0);
 
 

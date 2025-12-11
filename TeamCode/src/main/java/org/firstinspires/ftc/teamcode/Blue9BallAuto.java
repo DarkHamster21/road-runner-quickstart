@@ -229,7 +229,7 @@ public class Blue9BallAuto extends LinearOpMode {
                 new SequentialAction(
                         // 1. Score 3 pre-loaded artifacts
                         trajLeaveAndScore,
-                        //spinUpShooter,
+                        spinUpShooter,
                         shootThreeArtifacts,
                         stopShooter,
                         startIntakeMotor,
@@ -238,8 +238,8 @@ public class Blue9BallAuto extends LinearOpMode {
                         driveAndCollect1, // This single action now handles the entire collection process
                         trajScoreFromIntake1,
                         new ParallelAction(
-                                stopIntakeMotor
-                                //spinUpShooter
+                                stopIntakeMotor,
+                                spinUpShooter
                         ),
 
                         shootThreeArtifacts,
@@ -250,8 +250,8 @@ public class Blue9BallAuto extends LinearOpMode {
                         driveAndCollect2, // Same pattern for the second stack
                         trajScoreFromIntake2,
                         new ParallelAction(
-                                stopIntakeMotor
-                                //spinUpShooter
+                                stopIntakeMotor,
+                                spinUpShooter
                         ),
 
                         shootThreeArtifacts,

@@ -234,8 +234,9 @@ public class Red9BallAuto extends LinearOpMode {
 
                         // 2. Drive to, collect from, and score from the 1st stack
                         driveAndCollect1, // This single action now handles the entire collection process
-                        trajScoreFromIntake1,
+
                         new ParallelAction(
+                                trajScoreFromIntake1,
                                 stopIntakeMotor,
                                 spinUpShooter
                         ),
@@ -246,8 +247,9 @@ public class Red9BallAuto extends LinearOpMode {
 
                         // 3. Drive to, collect from, and score from the 2nd stack
                         driveAndCollect2, // Same pattern for the second stack
-                        trajScoreFromIntake2,
+
                         new ParallelAction(
+                                trajScoreFromIntake2,
                                 stopIntakeMotor,
                                 spinUpShooter
                         ),

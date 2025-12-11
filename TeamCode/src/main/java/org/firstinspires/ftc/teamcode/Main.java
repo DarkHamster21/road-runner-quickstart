@@ -81,15 +81,19 @@ public class Main extends LinearOpMode {
     boolean PreviousIntakeGamepad;
     boolean previousGamepadY = false;
 
-    boolean previousGamepadLBumper = false;
+    boolean previousGamepad2DpadRight = false;
 
     boolean PreviousGamepadOuttake = false;
+    boolean PreviousGamepad2B = false;
     boolean OuttakeEnabled = false;
 
     final double MaxOuttakeVelocity = 7.25; // rotations per seconds
-    final double OuttakeVelocityControl = 0.8;
+    double OuttakeVelocityControl = 0.8;
     double OuttakeVelocity = MaxOuttakeVelocity * OuttakeVelocityControl;
     final double OuttakeMotorPulsesPerRevolution = ((((1+(46.0/17.0))) * (1+(46.0/17.0))) * 28.0);
+    
+    boolean PreviousGamepad2RightBumper = false;
+    boolean PreviousGamepad2DpadRight = false;
 
 
     public void Controller2Init() {
@@ -118,7 +122,17 @@ public class Main extends LinearOpMode {
             OuttakeEnabled = !OuttakeEnabled;
         }
         PreviousGamepadOuttake = gamepad2.a;
-
+        
+        if (gamepad2.right_bumper && !PreviousGamepad2RightBumper) {
+            OuttakeVelocityControl += 0.05;
+        }
+        PreviousGamepad2RightBumper = gamepad2.right_bumper;
+        
+        if (gamepad2.left_bumper && !PreviousGamepad2DpadRight) {
+            OuttakeVelocityControl -= 0.05;
+        }
+        PreviousGamepad2DpadRight = gamepad2.left_bumper;
+        
         if(OuttakeEnabled) {
             RightOuttakeMotor.setVelocity(OuttakeMotorPulsesPerRevolution * OuttakeVelocity);
             LeftOuttakeMotor.setVelocity(OuttakeMotorPulsesPerRevolution * OuttakeVelocity);
@@ -147,12 +161,24 @@ public class Main extends LinearOpMode {
             SpindexerMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             SpindexerMotor.setPower(0.7);
         }
-        //Hamish's 3 ball shooter
         previousGamepadY = gamepad2.y;
-        if (gamepad2.left_bumper && !previousGamepadLBumper){
+        
+        // moves spindexer back one
+        if (gamepad2.b && !PreviousGamepad2B) {
+            spinDexerRotation -= SpindexerEncoderPulsesPerRevolution/3;
+
+            SpindexerMotor.setTargetPosition((int) spinDexerRotation);
+            SpindexerMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            SpindexerMotor.setPower(0.7);
+        }
+
+        PreviousGamepad2B = gamepad2.b;
+        
+        //Hamish's 3 ball shooter
+        if (gamepad2.dpad_right && !previousGamepad2DpadRight){
             RightOuttakeMotor.setVelocity(OuttakeMotorPulsesPerRevolution * OuttakeVelocity);
             LeftOuttakeMotor.setVelocity(OuttakeMotorPulsesPerRevolution * OuttakeVelocity);
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 1; i++) {
                 // Open gate to release one artifact
                 IntakeServo.setPosition(IntakeServoDepositAngle);
                 sleep(200); // Dwell time for artifact to pass
@@ -174,7 +200,7 @@ public class Main extends LinearOpMode {
             LeftOuttakeMotor.setVelocity(0);
         }
 
-        previousGamepadLBumper = gamepad2.left_bumper;
+        previousGamepad2DpadRight = gamepad2.dpad_right;
 
         // Trigger intake deposit
         if (gamepad2.dpad_up && !intakeDepositing ) { // && (outtakeStartTime + outtakeShootTime) <= getRuntime()

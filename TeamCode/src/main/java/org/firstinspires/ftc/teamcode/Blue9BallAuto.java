@@ -113,7 +113,7 @@ public class Blue9BallAuto extends LinearOpMode {
         };
 
 
-
+//TODO: slow intake motor when spindexer moves
         Action runSpindexerForIntake = telemetryPacket -> {
             switch (spindexerState) {
                 case 0: // Initial delay state
@@ -201,7 +201,6 @@ public class Blue9BallAuto extends LinearOpMode {
                 .afterDisp(0, new ParallelAction(startIntakeMotor, runSpindexerForIntake))
                 .splineToLinearHeading(endOfArtifactStack2, Math.toRadians(270))
                 // Use stopAndAdd() to run an instantaneous action at the end of the trajectory.
-                .stopAndAdd(stopIntakeMotor)
                 .build();
 
 
@@ -224,7 +223,7 @@ public class Blue9BallAuto extends LinearOpMode {
 
         if (isStopRequested()) return;
 
-        // === AUTONOMOUS SEQUENCE ===
+        //AUTONOMOUS SEQUENCE
         Actions.runBlocking(
                 new SequentialAction(
                         // 1. Score 3 pre-loaded artifacts

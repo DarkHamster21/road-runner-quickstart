@@ -115,10 +115,6 @@ public class Red9BallAuto extends LinearOpMode {
             return false;
         };
 
-
-
-        // ... (other actions are unchanged) ...
-
         Action runSpindexerForIntake = telemetryPacket -> {
             switch (spindexerState) {
                 case 0: // Initial delay state
@@ -126,16 +122,13 @@ public class Red9BallAuto extends LinearOpMode {
                     spindexerWaitTime = System.currentTimeMillis() + 300;
                     spindexerState = 1; // Move to the "wait for delay" state
                     break;
-
-                case 1: // Wait for the initial delay to finish
-                    if (System.currentTimeMillis() >= spindexerWaitTime) {
-                        // Timer is up, now start the first rotation
-                        spindexerRotation += SpindexerEncoderPulsesPerRevolution / 3;
-                        SpindexerMotor.setTargetPosition((int) spindexerRotation);
-                        SpindexerMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                        SpindexerMotor.setPower(0.8);
-                        spindexerState = 2; // Move to the "wait for move to finish" state
-                    }
+                case 1: // Start the first rotation
+                    spindexerWaitTime = System.currentTimeMillis() + 300;
+                    spindexerRotation += SpindexerEncoderPulsesPerRevolution / 3;
+                    SpindexerMotor.setTargetPosition((int) spindexerRotation);
+                    SpindexerMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                    SpindexerMotor.setPower(0.8);
+                    spindexerState = 2; // Move to the "wait for move to finish" state
                     break;
 
                 case 2: // Wait for the first rotation to complete
@@ -159,19 +152,14 @@ public class Red9BallAuto extends LinearOpMode {
 
                 case 4: // Wait for the second rotation to complete
                     if (!SpindexerMotor.isBusy()) {
-                        // Intake of 3 balls should be complete.
-                        // We are now finished.
+                        spindexerWaitTime = System.currentTimeMillis() + 300;
                         SpindexerMotor.setPower(0);
-                        spindexerState = 5; // Move to the final "finished" state
+                        spindexerState = 5; // Move to the "finished" state
                     }
                     break;
-                case 5: // Initial delay state
-                    // timer for how long to wait before the first rotation.
-                    spindexerWaitTime = System.currentTimeMillis() + 200;
-                    spindexerState = 6; // Move to the "wait for delay" state
-                    break;
 
-                case 6: // The action is complete
+
+                case 5: // The action is complete
                     spindexerState = 0; // Reset for the next time it's called
                     return false; // Signal that the action is finished
             }
@@ -195,7 +183,6 @@ public class Red9BallAuto extends LinearOpMode {
                 .afterDisp(0, new ParallelAction(startIntakeMotor, runSpindexerForIntake))
                 .splineToLinearHeading(endOfArtifactStack1, Math.toRadians(90))
                 // Use stopAndAdd() to run an instantaneous action at the end of the trajectory.
-                .stopAndAdd(stopIntakeMotor)
                 .build();
         // **MODIFIED**: Return trajectory now starts from the correct end position
         Action trajScoreFromIntake1 = drive.actionBuilder(endOfArtifactStack1)
@@ -212,7 +199,6 @@ public class Red9BallAuto extends LinearOpMode {
                 .afterDisp(0, new ParallelAction(startIntakeMotor, runSpindexerForIntake))
                 .splineToLinearHeading(endOfArtifactStack2, Math.toRadians(90))
                 // Use stopAndAdd() to run an instantaneous action at the end of the trajectory.
-                .stopAndAdd(stopIntakeMotor)
                 .build();
 
 
@@ -235,7 +221,7 @@ public class Red9BallAuto extends LinearOpMode {
 
         if (isStopRequested()) return;
 
-        // === AUTONOMOUS SEQUENCE ===
+        //AUTONOMOUS SEQUENCE
         Actions.runBlocking(
                 new SequentialAction(
                         // 1. Score 3 pre-loaded artifacts
@@ -243,22 +229,28 @@ public class Red9BallAuto extends LinearOpMode {
                         //spinUpShooter,
                         shootThreeArtifacts,
                         stopShooter,
+                        startIntakeMotor,
 
                         // 2. Drive to, collect from, and score from the 1st stack
                         driveAndCollect1, // This single action now handles the entire collection process
-                        new ParallelAction( // Optimize by spinning up shooter while returning
-                                trajScoreFromIntake1
+                        trajScoreFromIntake1,
+                        new ParallelAction(
+                                stopIntakeMotor
                                 //spinUpShooter
                         ),
+
                         shootThreeArtifacts,
                         stopShooter,
+                        startIntakeMotor,
 
                         // 3. Drive to, collect from, and score from the 2nd stack
                         driveAndCollect2, // Same pattern for the second stack
+                        trajScoreFromIntake2,
                         new ParallelAction(
-                                trajScoreFromIntake2
+                                stopIntakeMotor
                                 //spinUpShooter
                         ),
+
                         shootThreeArtifacts,
                         stopShooter,
 

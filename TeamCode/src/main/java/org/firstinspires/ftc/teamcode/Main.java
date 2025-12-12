@@ -30,7 +30,7 @@ public class Main extends LinearOpMode {
     }
 
     public void Controller1Loop() {
-        double y = -gamepad1.left_stick_y;
+        double y = gamepad1.left_stick_y;
         double x = gamepad1.left_stick_x * 1.1;
         double rx = -gamepad1.right_stick_x;
 
@@ -40,10 +40,15 @@ public class Main extends LinearOpMode {
         double frontRightPower = (y - x - rx) / denominator;
         double backRightPower = (y + x - rx) / denominator;
 
-        frontLeftMotor.setVelocity(frontLeftPower*1000);
-        backLeftMotor.setVelocity(backLeftPower*1000);
-        frontRightMotor.setVelocity(frontRightPower*1000);
-        backRightMotor.setVelocity(backRightPower*1000);
+        //frontLeftMotor.setVelocity(frontLeftPower*2795);
+        //backLeftMotor.setVelocity(backLeftPower*2795);
+        //frontRightMotor.setVelocity(frontRightPower*2795);
+        //backRightMotor.setVelocity(backRightPower*2795);
+
+        frontLeftMotor.setPower(frontLeftPower);
+        backLeftMotor.setPower(backLeftPower);
+        frontRightMotor.setPower(frontRightPower);
+        backRightMotor.setPower(backRightPower);
     }
 
     // Controller 2 stuff -----------------------
@@ -84,7 +89,7 @@ public class Main extends LinearOpMode {
     boolean previousGamepad2DpadRight = false;
 
     boolean PreviousGamepadOuttake = false;
-    boolean PreviousGamepad2B = false;
+    boolean PreviousGamepad2B = true; // so that when the user set controller up it doesn't auto rotate
     boolean OuttakeEnabled = false;
 
     final double MaxOuttakeVelocity = 7.25; // rotations per seconds
@@ -93,6 +98,7 @@ public class Main extends LinearOpMode {
     final double OuttakeMotorPulsesPerRevolution = ((((1+(46.0/17.0))) * (1+(46.0/17.0))) * 28.0);
     
     boolean PreviousGamepad2RightBumper = false;
+    boolean PreviousGamepad2DLeftBumper = false;
     boolean PreviousGamepad2DpadRight = false;
 
 
@@ -128,12 +134,13 @@ public class Main extends LinearOpMode {
         }
         PreviousGamepad2RightBumper = gamepad2.right_bumper;
         
-        if (gamepad2.left_bumper && !PreviousGamepad2DpadRight) {
+        if (gamepad2.left_bumper && !PreviousGamepad2DLeftBumper) {
             OuttakeVelocityControl -= 0.05;
         }
-        PreviousGamepad2DpadRight = gamepad2.left_bumper;
+        PreviousGamepad2DLeftBumper = gamepad2.left_bumper;
         
         if(OuttakeEnabled) {
+            OuttakeVelocity = MaxOuttakeVelocity * OuttakeVelocityControl;
             RightOuttakeMotor.setVelocity(OuttakeMotorPulsesPerRevolution * OuttakeVelocity);
             LeftOuttakeMotor.setVelocity(OuttakeMotorPulsesPerRevolution * OuttakeVelocity);
         } else {
@@ -175,9 +182,9 @@ public class Main extends LinearOpMode {
         PreviousGamepad2B = gamepad2.b;
         
         //Hamish's 3 ball shooter
-        if (gamepad2.dpad_right && !previousGamepad2DpadRight){
-            RightOuttakeMotor.setVelocity(OuttakeMotorPulsesPerRevolution * OuttakeVelocity);
-            LeftOuttakeMotor.setVelocity(OuttakeMotorPulsesPerRevolution * OuttakeVelocity);
+        if (gamepad2.dpad_right && !previousGamepad2DpadRight && OuttakeEnabled){
+            //RightOuttakeMotor.setVelocity(OuttakeMotorPulsesPerRevolution * OuttakeVelocity);
+            //LeftOuttakeMotor.setVelocity(OuttakeMotorPulsesPerRevolution * OuttakeVelocity);
             for (int i = 0; i < 1; i++) {
                 // Open gate to release one artifact
                 IntakeServo.setPosition(IntakeServoDepositAngle);
@@ -196,8 +203,8 @@ public class Main extends LinearOpMode {
                 OuttakeServo.setPosition(OUTTAKE_SERVO_START_POSITION);
 
             }
-            RightOuttakeMotor.setVelocity(0);
-            LeftOuttakeMotor.setVelocity(0);
+            //RightOuttakeMotor.setVelocity(0);
+            //LeftOuttakeMotor.setVelocity(0);
         }
 
         previousGamepad2DpadRight = gamepad2.dpad_right;
@@ -252,6 +259,7 @@ public class Main extends LinearOpMode {
             telemetry.addData("Intake Servo Position",IntakeServo.getPosition());
             telemetry.addData("Outtake Servo Position",OuttakeServo.getPosition());
             telemetry.addData("Spindexer Encoder Counts", spinDexerRotation);
+            telemetry.addData("Motor Velocity: ", OuttakeVelocityControl);
 
             telemetry.update();
         }

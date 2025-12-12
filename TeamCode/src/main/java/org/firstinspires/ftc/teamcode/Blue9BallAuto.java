@@ -38,14 +38,22 @@ public class Blue9BallAuto extends LinearOpMode {
 
      int spindexerState = 0;
      long spindexerWaitTime = 0;
+
+
+//     Shooting states
+    int shootState = 0;
+    long shootWaitTime = 0;
+    int shootCount = 0;
+
+     long pickupWaitTime = 0;
     @Override
     public void runOpMode() throws InterruptedException {
         // Initialize hardware
         IntakeMotor = hardwareMap.get(DcMotorEx.class, "IntakeMotor");
-        LeftOuttakeMotor = hardwareMap.get(DcMotorEx.class, "RightOuttakeMotor");
-        RightOuttakeMotor = hardwareMap.get(DcMotorEx.class, "LeftOuttakeMotor");
+        LeftOuttakeMotor = hardwareMap.get(DcMotorEx.class, "LeftOuttakeMotor");
+        RightOuttakeMotor = hardwareMap.get(DcMotorEx.class, "RightOuttakeMotor");
         SpindexerMotor = hardwareMap.get(DcMotorEx.class, "SpindexerMotor");
-        RightOuttakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        LeftOuttakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         IntakeServo = hardwareMap.get(Servo.class, "IntakeServo");
         OutakeServo = hardwareMap.get(Servo.class,"OuttakeServo");
 
@@ -78,24 +86,58 @@ public class Blue9BallAuto extends LinearOpMode {
             sleep(100);
             return false;
         };
-
+        // ... inside runOpMode() ...
         Action shootThreeArtifacts = telemetryPacket -> {
-            for (int i = 0; i < 3; i++) {
-                IntakeServo.setPosition(INTAKE_END_POSITION);
-                sleep(200);
-                IntakeServo.setPosition(INTAKE_START_POSITION);
-                sleep(100);
-                spindexerRotation += SpindexerEncoderPulsesPerRevolution/3;
-                SpindexerMotor.setTargetPosition((int) spindexerRotation);
-                SpindexerMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                SpindexerMotor.setPower(0.8);
-                sleep(400);
-                OutakeServo.setPosition(OUTTAKE_SERVO_SHOOT_POSITION);
-                sleep(200);
-                OutakeServo.setPosition(OUTTAKE_SERVO_START_POSITION);
+            switch (shootState) {
+                case 0: // Start first shot - move servo
+                    IntakeServo.setPosition(INTAKE_END_POSITION);
+                    shootWaitTime = System.currentTimeMillis() + 200;
+                    shootState = 1;
+                    break;
+                case 1: // Retract servo
+                    if (System.currentTimeMillis() >= shootWaitTime) {
+                        IntakeServo.setPosition(INTAKE_START_POSITION);
+                        shootWaitTime = System.currentTimeMillis() + 100;
+                        shootState = 2;
+                    }
+                    break;
+                case 2: // Move spindexer
+                    if (System.currentTimeMillis() >= shootWaitTime) {
+                        spindexerRotation += SpindexerEncoderPulsesPerRevolution / 3;
+                        SpindexerMotor.setTargetPosition((int) spindexerRotation);
+                        SpindexerMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                        SpindexerMotor.setPower(0.8);
+                        shootWaitTime = System.currentTimeMillis() + 400; // Wait for spindexer
+                        shootState = 3;
+                    }
+                    break;
+                case 3: // Fire the ring
+                    if (System.currentTimeMillis() >= shootWaitTime && !SpindexerMotor.isBusy()) {
+                        OutakeServo.setPosition(OUTTAKE_SERVO_SHOOT_POSITION);
+                        shootWaitTime = System.currentTimeMillis() + 200;
+                        shootState = 4;
+                    }
+                    break;
+                case 4: // Retract outtake servo
+                    if (System.currentTimeMillis() >= shootWaitTime) {
+                        OutakeServo.setPosition(OUTTAKE_SERVO_START_POSITION);
+                        shootCount++;
+                        if (shootCount >= 3) {
+                            // Finished all three shots
+                            shootState = 0; // Reset for next time
+                            shootCount = 0;
+                            return false; // Action is complete
+                        } else {
+                            // Go back to start the next shot
+                            shootState = 0;
+                        }
+                    }
+                    break;
             }
-            return false;
+            return true; // Action is still running
         };
+
+
 
         Action stopShooter = telemetryPacket -> {
             LeftOuttakeMotor.setVelocity(0);
@@ -178,15 +220,15 @@ public class Blue9BallAuto extends LinearOpMode {
                 .build();
 
         // **MODIFIED**: Single, continuous action to drive TO and THROUGH the first stack
-        Action driveAndCollect1 = drive.actionBuilder(scoringPose)
+        Action DriveToArtifact1 = drive.actionBuilder(scoringPose)
                 .setTangent(Math.toRadians(0))
                 .splineToLinearHeading(approachArtifactStack1, Math.toRadians(270))
-                // Use afterDisp(0, ...) to run an action at the start of the *next* segment.
-                // This starts the intake right as the robot moves forward to collect.
-                .afterDisp(0, new ParallelAction(runSpindexerForIntake))
-                .splineToLinearHeading(endOfArtifactStack1, Math.toRadians(270))
-                // Use stopAndAdd() to run an instantaneous action at the end of the trajectory.
                 .build();
+
+        Action DriveThroughArtifact1 = drive.actionBuilder(approachArtifactStack1)
+                .splineToLinearHeading(endOfArtifactStack1, Math.toRadians(270))
+                .build();
+
         // **MODIFIED**: Return trajectory now starts from the correct end position
         Action trajScoreFromIntake1 = drive.actionBuilder(endOfArtifactStack1)
                 .setTangent(Math.toRadians(90))
@@ -194,15 +236,16 @@ public class Blue9BallAuto extends LinearOpMode {
                 .build();
 
         // **MODIFIED**: Single action for the second stack
-        Action driveAndCollect2 = drive.actionBuilder(scoringPose)
+        Action DriveToArtifact2 = drive.actionBuilder(scoringPose)
                 .setTangent(Math.toRadians(0))
                 .splineToLinearHeading(approachArtifactStack2, Math.toRadians(270))
-                // Use afterDisp(0, ...) to run an action at the start of the *next* segment.
-                // This starts the intake right as the robot moves forward to collect.
-                .afterDisp(0, new ParallelAction(startIntakeMotor, runSpindexerForIntake))
-                .splineToLinearHeading(endOfArtifactStack2, Math.toRadians(270))
-                // Use stopAndAdd() to run an instantaneous action at the end of the trajectory.
+
                 .build();
+        Action DriveThroughArtifact2 = drive.actionBuilder(approachArtifactStack2)
+                .splineToLinearHeading(endOfArtifactStack2, Math.toRadians(270))
+                .build();
+
+
 
 
         // **MODIFIED**: Return trajectory for the second stack
@@ -235,8 +278,11 @@ public class Blue9BallAuto extends LinearOpMode {
                         startIntakeMotor,
 
                         // 2. Drive to, collect from, and score from the 1st stack
-                        driveAndCollect1, // This single action now handles the entire collection process
-
+                        DriveToArtifact1, // This single action now handles the entire collection process
+                        new ParallelAction(
+                                DriveThroughArtifact1,
+                                runSpindexerForIntake
+                        ),
                         new ParallelAction(
                                 trajScoreFromIntake1,
                                 stopIntakeMotor,
@@ -248,7 +294,11 @@ public class Blue9BallAuto extends LinearOpMode {
                         startIntakeMotor,
 
                         // 3. Drive to, collect from, and score from the 2nd stack
-                        driveAndCollect2, // Same pattern for the second stack
+                        DriveToArtifact2, // Same pattern for the second stack
+                        new ParallelAction(
+                                DriveThroughArtifact2,
+                                runSpindexerForIntake
+                        ),
 
                         new ParallelAction(
                                 trajScoreFromIntake2,

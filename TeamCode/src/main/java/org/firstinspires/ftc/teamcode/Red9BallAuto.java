@@ -44,10 +44,10 @@ public class Red9BallAuto extends LinearOpMode {
     public void runOpMode() throws InterruptedException {
         // Initialize hardware
         IntakeMotor = hardwareMap.get(DcMotorEx.class, "IntakeMotor");
-        LeftOuttakeMotor = hardwareMap.get(DcMotorEx.class, "RightOuttakeMotor");
-        RightOuttakeMotor = hardwareMap.get(DcMotorEx.class, "LeftOuttakeMotor");
+        LeftOuttakeMotor = hardwareMap.get(DcMotorEx.class, "LeftOuttakeMotor");
+        RightOuttakeMotor = hardwareMap.get(DcMotorEx.class, "RightOuttakeMotor");
         SpindexerMotor = hardwareMap.get(DcMotorEx.class, "SpindexerMotor");
-        RightOuttakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        LeftOuttakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         IntakeServo = hardwareMap.get(Servo.class, "IntakeServo");
         OutakeServo = hardwareMap.get(Servo.class,"OuttakeServo");
 
@@ -176,7 +176,7 @@ public class Red9BallAuto extends LinearOpMode {
                 .build();
 
         // **MODIFIED**: Single, continuous action to drive TO and THROUGH the first stack
-        Action driveAndCollect1 = drive.actionBuilder(scoringPose)
+        Action DriveToArtifact1 = drive.actionBuilder(scoringPose)
                 .setTangent(Math.toRadians(0))
                 .splineToLinearHeading(approachArtifactStack1, Math.toRadians(90))
                 // Use afterDisp(0, ...) to run an action at the start of the *next* segment.
@@ -192,7 +192,7 @@ public class Red9BallAuto extends LinearOpMode {
                 .build();
 
         // **MODIFIED**: Single action for the second stack
-        Action driveAndCollect2 = drive.actionBuilder(scoringPose)
+        Action DriveToArtifact2 = drive.actionBuilder(scoringPose)
                 .setTangent(Math.toRadians(0))
                 .splineToLinearHeading(approachArtifactStack2, Math.toRadians(90))
                 // Use afterDisp(0, ...) to run an action at the start of the *next* segment.
@@ -233,7 +233,7 @@ public class Red9BallAuto extends LinearOpMode {
                         startIntakeMotor,
 
                         // 2. Drive to, collect from, and score from the 1st stack
-                        driveAndCollect1, // This single action now handles the entire collection process
+                        DriveToArtifact1, // This single action now handles the entire collection process
 
                         new ParallelAction(
                                 trajScoreFromIntake1,
@@ -246,7 +246,7 @@ public class Red9BallAuto extends LinearOpMode {
                         startIntakeMotor,
 
                         // 3. Drive to, collect from, and score from the 2nd stack
-                        driveAndCollect2, // Same pattern for the second stack
+                        DriveToArtifact2, // Same pattern for the second stack
 
                         new ParallelAction(
                                 trajScoreFromIntake2,
